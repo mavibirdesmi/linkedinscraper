@@ -97,8 +97,8 @@ for url in url_list:
         sleep(parameters.delay)
         sel = Selector(text=driver.page_source)
         name = isValid(sel.xpath('//*[@id="ember51"]/div[2]/div[2]/div[1]/ul[1]/li[1]/text()').extract_first())
-        company = isValid(sel.xpath('//*[@id="ember94"]').extract_first())
-        education = isValid(sel.xpath('//*[@id="ember98"]').extract_first())
+        company = isValid(sel.xpath('//*[@id="ember94"]/text()').extract_first())
+        education = isValid(sel.xpath('//*[@id="ember98"]/text()').extract_first())
         job_title = isValid(sel.xpath('//*[@id="ember51"]/div[2]/div[2]/div[1]/h2/text()').extract_first())
         location = isValid(sel.xpath('//*[@id="ember51"]/div[2]/div[2]/div[1]/ul[2]/li[1]/text()').extract_first())
 
