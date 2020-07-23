@@ -1,4 +1,5 @@
 from selenium import webdriver
+from selenium.common.exceptions import NoSuchElementException
 from parsel import Selector
 import parameters
 from time import sleep
@@ -56,35 +57,58 @@ search_query.send_keys(toSearchWords(parameters.keywords))
 search_query.submit()
 
 #Now we are in the search area and we are going to get the links by going through page
-web_results = driver.find_element_by_xpath('//*[@id="rso"]')
+
+try:
+    web_results = driver.find_element_by_xpath('//*[@id="rso"]')
+except NoSuchElementException:
+    print("Please do the recaptcha and hit enter when you are done", end='')
+    input()
+    web_results = driver.find_element_by_xpath('//*[@id="rso"]')
+
+
 url_list = []
 k = 1
 for i in range(1, parameters.count + 1):
-
-    url_list.append(driver.find_element_by_xpath('//*[@id="rso"]/div[{}]/div/div[1]/a'.format(k)).get_attribute('href'))
-    k += 1
-    if (i % 10 == 0):
-        next_page = driver.find_element_by_xpath('//*[@id="pnnext"]').get_attribute('href')
-        driver.get(next_page)
-        k = 1
+    try:
+        url_list.append(driver.find_element_by_xpath('//*[@id="rso"]/div[{}]/div/div[1]/a'.format(k)).get_attribute('href'))
+    except NoSuchElementException:
+        continue
+    finally:
+        k += 1
+        if (i % 10 == 0):
+            try:
+                next_page = driver.find_element_by_xpath('//*[@id="pnnext"]').get_attribute('href')
+            except:
+                break
+            driver.get(next_page)
+            k = 1
 
 #Lastly we will scrape the data in the linkedin urls to the specified csv file 
 for url in url_list:
-    driver.get(url)
-    sleep(parameters.delay)
-    sel = Selector(text=driver.page_source)
+    try:
+        driver.get(url)
+        driver.find_element_by_id('captcha-internal')
+        print("Please do the recaptcha and hit enter when you are done", end= '')
+        input()
+        driver.get(url)
+    except:
+        pass
+    finally:
+        sleep(parameters.delay)
+        sel = Selector(text=driver.page_source)
+        name = isValid(sel.xpath('//*[@id="ember51"]/div[2]/div[2]/div[1]/ul[1]/li[1]/text()').extract_first())
+        company = isValid(sel.xpath('//*[@id="ember94"]').extract_first())
+        education = isValid(sel.xpath('//*[@id="ember98"]').extract_first())
+        job_title = isValid(sel.xpath('//*[@id="ember51"]/div[2]/div[2]/div[1]/h2/text()').extract_first())
+        location = isValid(sel.xpath('//*[@id="ember51"]/div[2]/div[2]/div[1]/ul[2]/li[1]/text()').extract_first())
 
-    name = isValid(sel.xpath('//*[@id="ember51"]/div[2]/div[2]/div[1]/ul[1]/li[1]/text()').extract_first())
-    company = isValid(sel.xpath('//*[@id="ember94"]/text()').extract_first())
-    education = isValid(sel.xpath('//*[@id="ember98"]/text()').extract_first())
-    job_title = isValid(sel.xpath('//*[@id="ember51"]/div[2]/div[2]/div[1]/h2/text()').extract_first())
-    location = isValid(sel.xpath('//*[@id="ember51"]/div[2]/div[2]/div[1]/ul[2]/li[1]/text()').extract_first())
-
-    writer.writerow([
-        name,
-        job_title,
-        company,
-        education,
-        location,
-        url,
-    ])
+        writer.writerow([
+            name,
+            job_title,
+            company,
+            education,
+            location,
+            url,
+        ])
+    
+    
